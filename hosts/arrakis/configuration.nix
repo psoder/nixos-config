@@ -24,6 +24,11 @@
   # Enable networking
   networking.networkmanager.enable = true;
 
+  nix.settings.experimental-features = [
+    "nix-command"
+    "flakes"
+  ];
+
   # Set your time zone.
   time.timeZone = "Europe/Stockholm";
 
@@ -83,9 +88,14 @@
     age
   ];
 
-  # sops = {
-  # 	age.keyFile = "/home/psoder/"
-  # };
+  sops = {
+    defaultSopsFile = ../../secrets/secrets.yaml;
+    age.keyFile = "/var/lib/sops/age/keys.txt";
+    secrets = {
+      "cloudflared/cert" = { };
+      "cloudflared/tunnel" = { };
+    };
+  };
 
   # Some programs need SUID wrappers, can be configured further or are
   # started in user sessions.
@@ -103,6 +113,13 @@
   services.cloudflared = {
     enable = true;
     tunnels = {
+      "72f37598-2af0-40ba-8ba2-38cd11d6b475" = {
+        credentialsFile = config.sops.secrets."cloudflared/tunnel".path;
+        default = "http_status:404";
+        ingress = {
+          "arete.psoder.net" = "http://localhost:3000";
+        };
+      };
     };
   };
 
