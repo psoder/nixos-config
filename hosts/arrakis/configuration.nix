@@ -88,6 +88,12 @@
   programs = {
     fish.enable = true;
 
+    neovim = {
+      enable = true;
+      defaultEditor = true;
+    };
+  };
+
   virtualisation.docker = {
     enable = true;
     rootless = {
@@ -99,8 +105,6 @@
   # List packages installed in system profile. To search, run:
   # $ nix search wget
   environment.systemPackages = with pkgs; [
-    vim
-    neovim
     git
     sops
     age
