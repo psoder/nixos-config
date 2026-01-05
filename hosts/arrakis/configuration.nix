@@ -78,7 +78,7 @@
     shell = pkgs.fish;
     extraGroups = [ "docker" ];
     openssh.authorizedKeys.keys = [
-	"ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIIiVhGSdGsZlWkhRsmNk/RIXuAdHSzFKRGOLlhrdsAZY deploy@arrakis"
+      "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIIiVhGSdGsZlWkhRsmNk/RIXuAdHSzFKRGOLlhrdsAZY deploy@arrakis"
     ];
   };
 
@@ -141,7 +141,7 @@
         default = "http_status:404";
         ingress = {
           "arrakis-ssh.psoder.net" = "ssh://localhost:22";
-	  "arete.psoder.net" = "http://localhost:8080";
+          "arete.psoder.net" = "http://localhost:8080";
         };
       };
     };
