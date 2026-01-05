@@ -63,6 +63,7 @@
     extraGroups = [
       "networkmanager"
       "wheel"
+      "docker"
     ];
     shell = pkgs.fish;
 
@@ -71,11 +72,28 @@
     ];
   };
 
+  users.users.deploy = {
+    isNormalUser = true;
+    description = "Deploy user for running apps";
+    shell = pkgs.fish;
+    extraGroups = [ "docker" ];
+    openssh.authorizedKeys.keys = [
+	"ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIIiVhGSdGsZlWkhRsmNk/RIXuAdHSzFKRGOLlhrdsAZY deploy@arrakis"
+    ];
+  };
+
   # Allow unfree packages
   nixpkgs.config.allowUnfree = true;
 
   programs = {
     fish.enable = true;
+
+  virtualisation.docker = {
+    enable = true;
+    rootless = {
+      enable = true;
+      setSocketVariable = true;
+    };
   };
 
   # List packages installed in system profile. To search, run:
@@ -86,6 +104,7 @@
     git
     sops
     age
+    cloudflared
   ];
 
   sops = {
@@ -93,7 +112,7 @@
     age.keyFile = "/var/lib/sops/age/keys.txt";
     secrets = {
       "cloudflared/cert" = { };
-      "cloudflared/tunnel" = { };
+      "cloudflared/arrakis" = { };
     };
   };
 
@@ -113,11 +132,12 @@
   services.cloudflared = {
     enable = true;
     tunnels = {
-      "72f37598-2af0-40ba-8ba2-38cd11d6b475" = {
-        credentialsFile = config.sops.secrets."cloudflared/tunnel".path;
+      "b89658cb-d969-411a-8560-9531eceec6f0" = {
+        credentialsFile = config.sops.secrets."cloudflared/arrakis".path;
         default = "http_status:404";
         ingress = {
-          "arete.psoder.net" = "http://localhost:3000";
+          "arrakis-ssh.psoder.net" = "ssh://localhost:22";
+	  "arete.psoder.net" = "http://localhost:8080";
         };
       };
     };
