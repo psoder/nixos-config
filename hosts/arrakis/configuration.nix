@@ -141,7 +141,8 @@
         default = "http_status:404";
         ingress = {
           "arrakis-ssh.psoder.net" = "ssh://localhost:22";
-          "arete.psoder.net" = "http://localhost:8080";
+          "arete.psoder.net" = "http://localhost:8000";
+          "arete-api.psoder.net" = "http://localhost:8080";
         };
       };
     };
