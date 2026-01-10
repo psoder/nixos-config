@@ -82,6 +82,16 @@
     ];
   };
 
+  users = {
+    users.ddns-updater = {
+      isSystemUser = true;
+      linger = true;
+      group = "ddns-updater";
+    };
+
+    groups.ddns-updater = { };
+  };
+
   # Allow unfree packages
   nixpkgs.config.allowUnfree = true;
 
@@ -109,6 +119,7 @@
     sops
     age
     cloudflared
+    ddns-updater
   ];
 
   sops = {
@@ -116,8 +127,25 @@
     age.keyFile = "/var/lib/sops/age/keys.txt";
     secrets = {
       "cloudflared/cert" = { };
-      "cloudflared/arrakis" = { };
+      "cloudflare/tunnels/arrakis/credentials" = { };
+      "cloudflare/zones/psoder.net/zone_id" = { };
+      "cloudflare/zones/psoder.net/dns/api_token" = { };
     };
+
+    templates."ddns-updater.config.json".content = builtins.toJSON {
+      settings = [
+        {
+          provider = "cloudflare";
+          zone_identifier = config.sops.placeholder."cloudflare/zones/psoder.net/zone_id";
+          domain = "arete.psoder.net";
+          ttl = 600;
+          token = config.sops.placeholder."cloudflare/zones/psoder.net/dns/api_token";
+          ip_version = "ipv4";
+          ipv6_suffix = "";
+        }
+      ];
+    };
+    templates."ddns-updater.config.json".owner = "ddns-updater";
   };
 
   # Some programs need SUID wrappers, can be configured further or are
@@ -137,13 +165,58 @@
     enable = true;
     tunnels = {
       "b89658cb-d969-411a-8560-9531eceec6f0" = {
-        credentialsFile = config.sops.secrets."cloudflared/arrakis".path;
+        credentialsFile = config.sops.secrets."cloudflare/tunnels/arrakis/credentials".path;
         default = "http_status:404";
         ingress = {
           "arrakis-ssh.psoder.net" = "ssh://localhost:22";
-          "arete.psoder.net" = "http://localhost:8000";
           "arete-api.psoder.net" = "http://localhost:8080";
         };
+      };
+    };
+  };
+
+  systemd.services = {
+    ddns-updater = {
+      enable = true;
+      description = "ddns-updater service";
+
+      wantedBy = [ "multi-user.target" ];
+      wants = [ "network-online.target" ];
+      after = [ "network-online.target" ];
+
+      serviceConfig = {
+        Type = "simple";
+        TimeoutSec = "5min";
+        ExecStart = ''
+          ${pkgs.ddns-updater}/bin/ddns-updater \
+          --LISTENING_ADDRESS=':6000' \
+          --CONFIG_FILEPATH=${config.sops.templates."ddns-updater.config.json".path}
+        '';
+        RestartSec = 30;
+        User = "ddns-updater";
+        Group = "ddns-updater";
+        StateDirectory = "ddns-updater";
+        Restart = "on-failure";
+
+        ProtectSystem = "strict";
+        ProtectHome = true;
+        NoNewPrivileges = true;
+        CapabilityBoundingSet = "";
+
+        ProtectKernelTunables = true;
+        ProtectKernelModules = true;
+        ProtectKernelLogs = true;
+        ProtectControlGroups = true;
+
+        RestrictAddressFamilies = [
+          "AF_INET"
+          "AF_INET6"
+        ];
+
+        ReadOnlyPaths = [
+          config.sops.templates."ddns-updater.config.json".path
+        ];
+        UMask = "0077";
       };
     };
   };
